@@ -57,8 +57,13 @@ After building the Ubuntu Ansible base image, run:
 packer build php-fpm-nginx.json
 ```
 
-This will take a few minutes to complete.  Once it is done you can run `docker
-images` to verify the image was created.
+This will take a few minutes to complete.  Once it is done you can run 
+
+```
+docker images
+```
+
+to verify the image was created.
 
 ## Starting the images
 
