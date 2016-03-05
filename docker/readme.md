@@ -97,4 +97,10 @@ Verify everything is running:
 docker ps
 ```
 
+The first time you start the db container, you will need to add the WordPress DB user:
+
+```
+./create-wordpress-database-user.sh
+```
+
 Then head to http://docker.dev:8080 to see WordPress!
