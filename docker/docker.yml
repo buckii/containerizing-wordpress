@@ -1,0 +1,64 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: enable memory and swap accounting
+      lineinfile: dest=/etc/default/grub
+                  regexp="^GRUB_CMDLINE_LINUX="
+                  line="GRUB_CMDLINE_LINUX=\"cgroup_enable=memory swapaccount=1\""
+      register: added_accounting
+
+    - name: run update-grub
+      shell: update-grub
+      when: added_accounting.changed
+
+    - shell: uname -r
+      register: kernel_version
+
+    - name: install docker deps
+      apt: name="{{ item }}" state=latest
+      with_items:
+        - unzip
+        - apt-transport-https
+        - ca-certificates
+        - "linux-image-extra-{{ kernel_version.stdout }}"
+        - apparmor
+
+    - name: Run apt-get update && apt-get dist-upgrade
+      apt: update_cache=yes upgrade=dist
+
+    - name: Check if reboot required
+      stat: path=/var/run/reboot-required get_md5=no
+      register: reboot_file
+
+    - name: Tell user run vagrant reload
+      fail: msg="You need to run vagrant reload!"
+      when: reboot_file.stat.exists or added_accounting.changed
+
+    - name: Autoremove unused packages
+      shell: DEBIAN_FRONTEND=noninteractive apt-get -y autoremove -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold"
+
+
+    - name: add docker key
+      apt_key: keyserver=hkp://p80.pool.sks-keyservers.net:80
+               id=58118E89F3A912897C070ADBF76221572C52609D
+               state=present
+
+    - name: add docker repository
+      apt_repository: repo="deb https://apt.dockerproject.org/repo ubuntu-trusty main"
+                      update_cache=yes
+                      state=present
+
+    - name: install docker-engine
+      apt: name="docker-engine"
+           state=latest
+
+    - name: create docker group and add vagrant user to it
+      shell: usermod -aG docker vagrant
+
+    - name: download and install packer
+      unarchive: src="https://releases.hashicorp.com/packer/0.9.0/packer_0.9.0_linux_amd64.zip"
+                 dest="/usr/local/bin"
+                 copy=no
+
+

@@ -1,0 +1,51 @@
+---
+# Zend PHP, FPM and CLI.
+
+- name: add php7 ppa
+  apt_repository: repo='ppa:ondrej/php' update_cache=true
+
+- name: install php7.0 (zend) and assorted extensions
+  apt: name={{ item }} state="latest"
+  with_items:
+    - php7.0-fpm
+    - php7.0-cli
+    - php7.0-curl
+    - php7.0-gd
+    - php7.0-gmp
+    - php7.0-mcrypt
+    - php7.0-json
+    - php7.0-pgsql
+    - php7.0-sqlite3
+    - php7.0-mysql
+
+- name: make php-fpm service directory
+  file: path=/etc/service/php-fpm
+        state=directory
+
+- name: make php-fpm pid directory
+  file: path=/var/run/php
+        state=directory
+
+- name: install php-fpm service file
+  template: src=service/php-fpm.j2
+            dest=/etc/service/php-fpm/run
+            mode=0700
+
+- name: install php-fpm.conf file
+  template: src=php-fpm.conf.j2
+            dest=/etc/php/7.0/fpm/php-fpm.conf
+
+- name: install www pool config file
+  template: src=www.conf.j2
+            dest=/etc/php/7.0/fpm/pool.d/www.conf
+
+- name: install php.ini file
+  template: src=php7.0.ini.j2 dest=/etc/php/7.0/fpm/php.ini
+
+- name: install composer
+  shell: curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer
+         creates=/usr/local/bin/composer
+
+- name: update composer
+  command: "/usr/local/bin/composer selfupdate"
+

@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Containerizing WordPress</title>
+		<meta name="description" content="WordCamp Dayton 2016 Talk about using containers and WordPress.">
+		<meta name="author" content="Paul Tela">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+		<link rel="stylesheet" href="css/custom.css">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section data-background="img/sponsor-slide.jpg" data-background-size="contain" class="cover-slide">
+					<div class="left-half">
+						<h1>Containerizing WordPress</h1>
+						<h3>Using Containers and WordPress</h3>
+						<p>
+							<small>
+								<a href="https://paultela.com">Paul Tela</a> / <a href="https://twitter.com/paultela">@paultela</a><br>
+								<a href="http://buckii.com/containerizing-wordpress">buckii.com/containerizing-wordpress</a>
+							</small>
+						</p>
+					</div>
+				</section>
+				<section>
+					<h2>About Me</h2>
+					<ul>
+						<li>Software Engineer at <a href="https://buckeyeinteractive.com">Buckeye Interactive</a></li>
+						<li>Primarily back-end development and infrastructure/DevOps</li>
+						<li>Enjoy solving the problems that startups and small businesses have</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Today we're going to talk about containers</h2>
+					<p>We will cover:</p>
+					<ol>
+						<li>What are containers and why would you use them?</li>
+						<li>WordPress specific challenges and considerations.</li>
+						<li>Running containers in production.</li>
+					</ol>
+				</section>
+				<section>
+					<h2>What are they?</h2>
+					<p>Containers are composed of two parts:</p>
+					<ol>
+						<li>An image of a filesystem.</li>
+						<li>A runtime "namespace" that provides various types of isolation.</li>
+					</ol>
+				</section>
+				<section>
+					<h2>How do they compare to VMs?</h2>
+					<p>Process level isolation vs system emulation.</p>
+					<p>Lighter weight, but not as secure.</p>
+				</section>
+				<section>
+					<h2>Why would you use them?</h2>
+					<ul>
+						<li>You have lots of applications you need to manage.</li>
+						<li>You want to improve utilization of your existing servers.</li>
+						<li>You want to make on-boarding new developers more efficient.</li>
+						<li>Application centric management of resources.</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Not a silver bullet</h2>
+					<p>Containers will not magically solve all of your problems!</p>
+					<p>Using containers effectively requires extensive knowledge of Linux and your application's stack.</p>
+				</section>
+				<section>
+					<h2>Brief History</h2>
+					<p>First containers were essentially just chroot.</p>
+					<p>FreeBSD Jails introduced additional namespaces, such as process ids.</p>
+					<p>Linux cgroups added additional functionality such as memory and cpu constraints.</p>
+				</section>
+				<section>
+					<h2>Docker? Rkt?</h2>
+					<p>
+						<img class="img-bg" src="img/docker-logo.png" alt="docker">
+						<img class="img-bg" src="img/rkt-logo.png" alt="rkt">
+						<img class="img-bg" src="img/open-container-logo.png" alt="Open Container Initiative">
+					</p>
+				</section>
+				<section>
+					<h2>We're going to use Docker today</h2>
+					<p>Along with a few other technologies:</p>
+					<ul>
+						<li>Vagrant - Manage virtual machines</li>
+						<li>Packer - Build images</li>
+						<li>Ansible - Provisioning tool</li>
+					</ul>
+				</section>
+				<section>
+					<h2>WordPress Challenges</h2>
+					<p>
+						<img class="img-bg" src="img/honest-or-nice.gif" alt="honest or nice">
+					</p>
+				</section>
+				<section>
+					<h2>WordPress Challenges</h2>
+					<p>WordPress optimizes for user friendliness, this is great!</p>
+					<p>But some of its default behaviors make Ops people cringe.</p>
+					<p>In fairness, it is designed to run in shared hosting environments so it has to be flexible.</p>
+				</section>
+				<section>
+					<h2>Example One</h2>
+					<p>Core, Plugin, and Theme upgrades can be run from the Admin panel.</p>
+					<p>Actually, there is a full source editor in the Admin panel too.</p>
+					<p>
+						<img class="img-bg" src="img/what-did-you-say.gif" alt="honest or nice">
+					</p>
+				</section>
+				<section>
+					<h2>Example Two</h2>
+					<p>Plugins and Themes can and will do whatever they want.</p>
+					<p>They will create new files, modify existing ones, download things, etc...</p>
+				</section>
+
+				<section>
+					<h2>Why are these problems?</h2>
+					<p>Ideally containers should be immutable.</p>
+					<p>If the container is changed and started again, the changes will be lost.</p>
+				</section>
+
+				<section>
+					<h2>Possible Solutions</h2>
+					<p>Disable this functionality.  Either at WordPress or file level.</p>
+					<p>Mount the WordPress install, or portions of it,  as a volume.</p>
+				</section>
+
+				<section>
+					<h2>Disabling Editing</h2>
+					<p>Do this at the file level as well as WordPress level.</p>
+					<p>Solves the problem well, but not always an option.</p>
+				</section>
+
+				<section>
+					<h2>Using a Volume</h2>
+					<p>The container just becomes a runtime at this point.</p>
+					<p>Managing the deployed code now becomes an additional step.</p>
+					<p>Lose some of the benefits of a container.</p>
+				</section>
+
+				<section>
+					<h2>Let's Run WordPress in a container</h2>
+					<p>Demo time.</p>
+					<p>
+						Want to try this at home?  Source here: 
+						<a href="https://github.com/buckii/containerizing-wordpress">https://github.com/buckii/containerizing-wordpress</a>
+					</p>
+				</section>
+
+				<section>
+					<h2>Running Containers in Production</h2>
+					<p>
+						<img class="img-bg" src="img/I-know-exactly-what-to-do.jpg" alt="I know exactly what to do">
+					</p>
+				</section>
+
+				<section>
+					<h2>Things to worry about</h2>
+					<ul>
+						<li>Scheduling</li>
+						<li>Load balancing/routing</li>
+						<li>Logging</li>
+						<li>Monitoring</li>
+						<li>Dependency management (between containers)</li>
+						<li>Security and secrets</li>
+						<li>Backup</li>
+						<li>Redundancy</li>
+						<li>Deployment</li>
+						<li>And more...</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Kubernetes</h2>
+					<p>Open-source platform for automating operations of application containers across clusters of hosts.</p>
+					<p>The name Kubernetes originates from Greek, meaning "helmsman" or "pilot", and is the root of "governor" and "cybernetic".</p>
+					<p>(taken from <a href="http://kubernetes.io/v1.1/docs/whatisk8s.html">kubernetes.io</a>)</p>
+				</section>
+
+				<section>
+					<h2>What can it do?</h2>
+					<p>A number of useful things, including:</p>
+					<ul>
+						<li>Co-locating helper processes</li>
+						<li>Mounting storage systems</li>
+						<li>Distributing secrets</li>
+						<li>Application health checking</li>
+						<li>Replicating application instances</li>
+						<li>Horizontal auto-scaling</li>
+						<li>Load balancing</li>
+						<li>Rolling updates</li>
+						<li>Resource monitoring</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Other solutions</h2>
+					<p>There are a number of other solutions, including:</p>
+					<ul>
+						<li><a href="https://docs.docker.com/swarm/">Docker Swarm</a></li>
+						<li><a href="http://mesos.apache.org/">Apache Mesos</a></li>
+						<li><a href="http://lattice.cf/">Lattice</a></li>
+						<li><a href="https://aws.amazon.com/ecs/">Amazon EC2 Container Service</a></li>
+						<li><a href="https://www.tutum.co/">Tutum</a></li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Questions</h2>
+					<p>Thank you!  Feel free to contact me:</p>
+					<p>Paul Tela<br>
+					Software Engineer, Buckeye Interactive</p>
+					<p>
+						614.289.7900<br>
+						<a href="mailto:paul@buckeyeinteractive.com">paul@buckeyeinteractive.com</a><br>
+						<a href="https://twitter.com/paultela">@paultela</a><br>
+						<a href="https://twitter.com/BuckeyeWebDev">@BuckeyeWebDev</a><br>
+						<a href="https://www.linkedin.com/in/paultela">https://www.linkedin.com/in/paultela</a><br>
+					</p>
+				</section>
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+		<script>
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+		</script>
+	</body>
+</html>

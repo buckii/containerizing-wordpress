@@ -1,0 +1,21 @@
+{
+	"provisioners": [
+		{
+			"type": "ansible-local",
+			"playbook_file": "./php-fpm-nginx-playbook.yml",
+			"playbook_dir": "."
+		}
+	],
+	"builders": [{
+		"type": "docker",
+		"image": "ubuntu-ansible",
+		"pull": false,
+		"commit": true
+	}],
+	"post-processors": [
+		{
+			"type": "docker-tag",
+			"repository": "php-fpm-nginx"
+		}
+	]
+}

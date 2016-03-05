@@ -1,0 +1,36 @@
+---
+# Nginx Config
+- name: add nginx stable ppa
+  apt_repository: repo='ppa:nginx/stable' update_cache=yes
+
+- name: install nginx
+  apt: name=nginx state=latest
+
+- name: make nginx service directory
+  file: path=/etc/service/nginx
+        state=directory
+
+- name: install nginx service file
+  template: src=service/nginx.j2
+            dest=/etc/service/nginx/run
+            mode=0700
+
+- name: install nginx conf file
+  template: src=nginx.conf.j2
+            dest=/etc/nginx/nginx.conf
+
+- name: install nginx default site file
+  template: src=default.j2
+            dest=/etc/nginx/sites-enabled/default
+
+- name: link access.log to stdout
+  file: path=/var/log/nginx/access.log
+        src=/dev/stdout
+        force=yes
+        state=link
+
+- name: link error.log to stderr
+  file: path=/var/log/nginx/error.log
+        src=/dev/stderr
+        force=yes
+        state=link

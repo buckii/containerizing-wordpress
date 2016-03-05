@@ -1,0 +1,20 @@
+---
+web_user: deploy
+web_group: www-data
+web_root_prefix: /var/www
+
+nginx_logrotate_frequency: weekly
+nginx_logrotate_rotate: 12
+nginx_worker_processes: "{{ ansible_processor_vcpus }}"
+nginx_worker_connections: 1024
+nginx_multi_accept: 'on'
+nginx_sendfile: 'on'
+nginx_tcp_nopush: 'on'
+nginx_tcp_nodelay: 'on'
+nginx_keepalive_timeout: 65
+nginx_gzip: 'on'
+nginx_gzip_disable: 'msie6'
+nginx_gzip_vary: 'on'
+nginx_gzip_proxied: 'any'
+nginx_gzip_types: "text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript application/javascript"
+
