@@ -1,7 +1,0 @@
----
-web_user: deploy
-web_group: www-data
-
-php_upload_max_filesize: 40M
-php_post_max_size: 160M
-php_memory_limit: 128M
